@@ -1,0 +1,20 @@
+services:
+  nestjs_api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "54566:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    volumes:
+      - /etc/ssl/basmai-private/server.key:/etc/ssl/basmai-private/server.key:ro
+      - /etc/ssl/basmai/basm_ai_net.pem:/etc/ssl/basmai/basm_ai_net.pem:ro
+      - ./src:/usr/src/app/src
+    networks:
+      - internalnet
+
+networks:
+  internalnet:
+    driver: bridge

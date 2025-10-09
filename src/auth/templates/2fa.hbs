@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two-Factor Authentication Code</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #4A90E2;
+            padding: 20px;
+            text-align: center;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .header img {
+            max-width: 120px;
+            height: auto;
+        }
+        .content {
+            padding: 20px;
+            color: #333333;
+        }
+        .code-container {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 24px;
+            text-align: center;
+            letter-spacing: 2px;
+            font-weight: bold;
+            color: #4A90E2;
+            margin: 20px 0;
+        }
+        .footer {
+            padding: 20px;
+            font-size: 14px;
+            color: #999999;
+            text-align: center;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <!-- Header with Company Logo -->
+    <div class="header">
+        <!-- Replace with company logo -->
+        <img src="{{ imageURL }}" alt="Company Logo">
+    </div>
+
+    <!-- Email Content -->
+    <div class="content">
+        <h2>Two-Factor Authentication (2FA) Code</h2>
+        <p>Dear {{username}},</p>
+        <p>To complete your login process, please use the following 2FA code. This code is valid for 10 minutes:</p>
+
+        <!-- 2FA Code -->
+        <div class="code-container">{{twoFactorCode}}</div>
+
+        <p>If you did not request this code, please contact our support team immediately.</p>
+        <p>Thank you for keeping your account secure!</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        &copy; {{year}} {{companyName}}. All rights reserved.
+    </div>
+</div>
+</body>
+</html>

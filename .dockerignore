@@ -1,0 +1,6 @@
+**/node_modules/
+**/dist/
+**/.angular/
+**/README.md
+**/LICENSE
+**/npm-debug.log
