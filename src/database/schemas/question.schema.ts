@@ -6,7 +6,8 @@ export interface TabletopQuestion {
     number: string;
     question: string;
     options: mongooseSchema.Types.Mixed;
-    correctAnswer: string;
+    correctAnswer: string[];
+    category?: string;
 }
 
 export type QuestionDocument = HydratedDocument<Question>;

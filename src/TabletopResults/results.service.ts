@@ -127,7 +127,7 @@ export class ResultsService {
 
             try {
                 const token = await this.authService.getTrainingToken(user._id.toString(), campaignId);
-                await this.emailService.sendTrainingDashboardLink(user.email, token);
+                await this.emailService.sendTrainingDashboardLink(user.email, token, user.first_name);
                 console.log(`[createTrainingSessionsAfterResults] email queued for ${user.email}`);
             } catch (err) {
                 console.error(`[createTrainingSessionsAfterResults] failed to create training session or send email for ${user.email}`, err);
