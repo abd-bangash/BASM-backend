@@ -12,6 +12,7 @@ export class TabletopAttendance {
    @Prop({ required: true }) designation: string;
    @Prop({ required: true }) dateAdded: Date;
    @Prop({ required: true }) email: string;
+   @Prop({ type: [String], default: [] }) weakCategories: string[];
 }
 
 export const tt_attendance_Schema = SchemaFactory.createForClass(TabletopAttendance);

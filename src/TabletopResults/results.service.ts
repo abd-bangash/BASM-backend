@@ -8,6 +8,10 @@ import { TabletopQuestion } from "../database/schemas/question.schema";
 import { questions } from "../Tabletop/question.interface";
 import { dQuestionsService } from "../DefaultQuestions/dQuestions.service";
 import { TabletopAttendance, tt_attendance_Document } from '../database/schemas/tabletop_attendance.schema';
+import { TrainingSession, TrainingSessionDocument } from '../database/schemas/training_session_schema';
+import { CategoryVideo, CategoryVideoDocument } from '../database/schemas/category_video_schema'
+import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../services/email.service';
 
 
 interface Answer {
@@ -33,7 +37,10 @@ export class ResultsService {
     constructor(
         @InjectModel(TabletopResults.name) private tabletopResultsModel: Model<TabletopResultsDocument>,
         @InjectModel(TabletopAttendance.name) private attendanceModel: Model<tt_attendance_Document>,
+        @InjectModel(TrainingSession.name) private trainingSessionModel: Model<TrainingSessionDocument>,
+        @InjectModel(CategoryVideo.name) private categoryVideoModel: Model<CategoryVideoDocument>,
         private tabletopService: TabletopService,
+        private readonly emailService: EmailService,
         private readonly questionsService: dQuestionsService
     ) { }
 
@@ -61,17 +68,113 @@ export class ResultsService {
         const userScore = this.calculateUserScore(results);
         const totalScore = this.getTotalTabletopCampaignQuestions(this.currentCampaignData.questions) * 10;
         const categoryScores = await this.calculateCategoryScores(results);
+
         const newResults = new this.tabletopResultsModel({
             campaignId: new mongoose.Types.ObjectId(results[0].campaignId),
             userId: results[0].userId,
             totalMarks: totalScore,
             obtainedMarks: userScore,
             categoryScore: categoryScores,
-
         });
 
-        return newResults.save();
+        const savedResult = await newResults.save();
+        // console.log("==================>", results, results[0].campaignId, "====================>")
+
+        await this.updateWeakCategories(results[0].userId, results[0].campaignId);
+        await this.createTrainingSessionsAfterResults(results[0].campaignId)
+
+        return savedResult;
     }
+
+    async updateWeakCategories(userId: string, campaignId: string) {
+        const participantResults = await this.getResultsByParticipant(campaignId);
+        // console.log("==================>", participantResults)
+        const userSpecificResults = participantResults.find(result => result.userId === userId);
+
+        if (!userSpecificResults) {
+            console.log(`No results found for user ${userId} in campaign ${campaignId}`);
+            return;
+        }
+
+        const uniqueWeakCategories = new Set();
+        for (const category of userSpecificResults.categories) {
+            const percentage = (category.obtainedMarks / category.totalMarks) * 100;
+            if (percentage < 80) {
+                uniqueWeakCategories.add(category.categoryName);
+            }
+        }
+        // Convert the Set to an Array
+        const weakCategoriesToAdd = Array.from(uniqueWeakCategories);
+
+        // console.log(weakCategoriesToAdd);
+
+        // Use $addToSet with the $each modifier to add multiple items uniquely
+        await this.attendanceModel.findOneAndUpdate(
+            { _id: userId, campaignId: campaignId },
+            { $addToSet: { weakCategories: { $each: weakCategoriesToAdd } } }, // <-- Key change here
+            { new: true, upsert: true } // Added upsert: true just in case the document doesn't exist
+        );
+    }
+
+    // ...existing code...
+    async createTrainingSessionsAfterResults(campaignId: string) {
+        // normalize campaignId to ObjectId if possible (older or newer data may differ)
+        const campaignQueryId = mongoose.Types.ObjectId.isValid(campaignId)
+            ? new mongoose.Types.ObjectId(campaignId)
+            : campaignId;
+
+        console.log('[createTrainingSessionsAfterResults] campaignId:', campaignId, 'using query id:', campaignQueryId);
+        const results = await this.tabletopResultsModel.find({ campaignId: campaignQueryId }).lean().exec();
+        console.log('[createTrainingSessionsAfterResults] results found:', results?.length ?? 0);
+        const categoryVideoMap = {
+            "Phishing": "http://localhost:3000/videos/categories/phishing.mp4",
+            "Email Security": "http://localhost:3000/videos/categories/Fraudlent-Activity.mp4",
+            "Malware and ransomware": "http://localhost:3000/videos/categories/Malware&Ransomware.mp4",
+        };
+
+        for (const result of results) {
+            console.log('[createTrainingSessionsAfterResults] processing user:', result.userId);
+            const user = await this.attendanceModel.findById(result.userId).lean().exec();
+            console.log('[createTrainingSessionsAfterResults] attendance user found:', !!user);
+            if (!user || !Array.isArray(user.weakCategories) || user.weakCategories.length === 0) continue;
+
+            for (const category of user.weakCategories) {
+                console.log('[createTrainingSessionsAfterResults] weak category:', category);
+                const videoUrl = categoryVideoMap[category];
+                const token = uuidv4();
+
+                const sessionPayload: Partial<TrainingSession> = {
+                    // map to schema fields
+                    userEmail: user.email,
+                    campaignId: campaignQueryId as any,
+                    categoryName: category,
+                    token,
+                    status: 'pending',
+                    // include videoPath only if schema supports it (see patch 2)
+                    videoPath: videoUrl,
+                };
+
+                try {
+                    await this.trainingSessionModel.create(sessionPayload);
+                    console.log('[createTrainingSessionsAfterResults] training session created for', user.email, category);
+                } catch (err) {
+                    console.error('[createTrainingSessionsAfterResults] failed to create training session for', user.email, err);
+                    continue; // skip email if session creation fails
+                }
+
+                // build dashboard link and send email; log any email errors
+                const dashboardLink = `https://frontend.yourapp.com/dashboard?user=${user._id}&token=${token}`;
+                console.log('[createTrainingSessionsAfterResults] sending email to:', user.email, 'category:', category, 'link:', dashboardLink);
+                try {
+                    await this.emailService.sendVideoLink(user.email, category, dashboardLink);
+                    console.log('[createTrainingSessionsAfterResults] email queued for', user.email);
+                } catch (emailErr) {
+                    console.error('[createTrainingSessionsAfterResults] failed to send email to', user.email, emailErr);
+                }
+            }
+        }
+    }
+    // ...existing code...
 
     private async calculateCategoryScores(answers: Answer[]): Promise<{ [category: string]: { obtainedMarks: number, totalMarks: number } }> {
         const categoryScores: { [category: string]: { obtainedMarks: number, totalMarks: number } } = {};
@@ -323,7 +426,7 @@ export class ResultsService {
             questionCategories.push(question.category);
         })
         questionCategories = this.formatCategories(questionCategories);
-        console.log(questionCategories);
+        // console.log(questionCategories);
 
         const categoryScoresRadarChart = {};
         results.forEach(result => {
@@ -372,14 +475,14 @@ export class ResultsService {
                 return null;
             }
             const results_found_length = campaign_data.length;
-            console.log(`Results found" ${results_found_length}`);
+            // console.log(`Results found" ${results_found_length}`);
             let totalMarks = 0;
             let obtainedMarks = 0;
             for (let data of campaign_data) {
                 obtainedMarks += data.obtainedMarks;
                 totalMarks += data.totalMarks;
             }
-            console.log(`Obtained Marks: ${obtainedMarks}`);
+            // console.log(`Obtained Marks: ${obtainedMarks}`);
             return {
                 obtainedMarksPercentage: (obtainedMarks / totalMarks) * 100,
                 remainingMarksPercentage: 100 - ((obtainedMarks / totalMarks) * 100),
@@ -424,67 +527,81 @@ export class ResultsService {
     }
 
     async getResultsByParticipant(campaignId: string) {
-        return this.tabletopResultsModel.aggregate([
-            // Step 1: Only include this campaign
-            {
-                $match: {
-                    campaignId: new mongoose.Types.ObjectId(campaignId),
-                },
-            },
+        try {
+            // console.log('campaignId:', campaignId);
+            const campaignObjectId = new mongoose.Types.ObjectId(campaignId);
+            // console.log('campaignObjectId:', campaignObjectId);
 
-            // Step 2: Convert categoryScore object into array
-            {
-                $addFields: {
-                    categoryArray: {
-                        $objectToArray: "$categoryScore",
+            const results = await this.tabletopResultsModel.find({ campaignId: campaignObjectId }).exec();
+            // console.log('Initial results:', results);
+
+            const result = await this.tabletopResultsModel.aggregate([
+                // Step 1: Only include this campaign
+                {
+                    $match: {
+                        campaignId: campaignObjectId,
                     },
                 },
-            },
 
-            // Step 3: Group by userId and combine all categories
-            {
-                $group: {
-                    _id: "$userId",
-                    totalObtainedMarks: { $sum: "$obtainedMarks" },
-                    totalMarks: { $sum: "$totalMarks" },
-                    categories: { $push: "$categoryArray" },
-                },
-            },
-
-            // Step 4: Flatten nested category arrays
-            {
-                $project: {
-                    _id: 0,
-                    userId: "$_id",
-                    totalObtainedMarks: 1,
-                    totalMarks: 1,
-                    categories: {
-                        $reduce: {
-                            input: "$categories",
-                            initialValue: [],
-                            in: { $concatArrays: ["$$value", "$$this"] },
+                // Step 2: Convert categoryScore object into array
+                {
+                    $addFields: {
+                        categoryArray: {
+                            $objectToArray: "$categoryScore",
                         },
                     },
                 },
-            },
 
-            // Step 5: Optionally reshape categories into a cleaner structure
-            {
-                $addFields: {
-                    categories: {
-                        $map: {
-                            input: "$categories",
-                            as: "cat",
-                            in: {
-                                categoryName: "$$cat.k",
-                                obtainedMarks: "$$cat.v.obtainedMarks",
-                                totalMarks: "$$cat.v.totalMarks",
+                // Step 3: Group by userId and combine all categories
+                {
+                    $group: {
+                        _id: "$userId",
+                        totalObtainedMarks: { $sum: "$obtainedMarks" },
+                        totalMarks: { $sum: "$totalMarks" },
+                        categories: { $push: "$categoryArray" },
+                    },
+                },
+
+                // Step 4: Flatten nested category arrays
+                {
+                    $project: {
+                        _id: 0,
+                        userId: "$_id",
+                        totalObtainedMarks: 1,
+                        totalMarks: 1,
+                        categories: {
+                            $reduce: {
+                                input: "$categories",
+                                initialValue: [],
+                                in: { $concatArrays: ["$$value", "$$this"] },
                             },
                         },
                     },
                 },
-            },
-        ]);
+
+                // Step 5: Optionally reshape categories into a cleaner structure
+                {
+                    $addFields: {
+                        categories: {
+                            $map: {
+                                input: "$categories",
+                                as: "cat",
+                                in: {
+                                    categoryName: "$$cat.k",
+                                    obtainedMarks: "$$cat.v.obtainedMarks",
+                                    totalMarks: "$$cat.v.totalMarks",
+                                },
+                            },
+                        },
+                    },
+                },
+            ]);
+            // console.log(result)
+            return result
+        } catch (error) {
+            console.error('Error in getResultsByParticipant:', error);
+            throw error;
+        }
     }
 
 

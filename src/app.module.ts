@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { AppService } from './app.service';
+import { join } from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ClientsModule } from './clients/clients.module';
@@ -38,7 +40,8 @@ import { TabletopGatewayModule } from "./gateway/gateway.module";
 import { FeedbackModule } from './feedback/feedback.module';
 import { tt_attendance_Module } from './Tabletop/tt_attendance.module';
 import { DashboardlogicsModule } from './dashboardlogics/dashboardlogics.module';
-
+import { VideoSessionModule } from './video-session/video-session.module';
+import { EmailService } from './services/email.service';
 
 
 @Module({
@@ -59,6 +62,10 @@ import { DashboardlogicsModule } from './dashboardlogics/dashboardlogics.module'
 
   imports: [
     ScheduleModule.forRoot(), //for timer, we will need job scheduler
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads/videos/categories'),
+      serveRoot: '/videos', // will expose them at http://localhost:3000/videos/<filename>
+    }),
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule, CacheModule.register({
@@ -88,10 +95,12 @@ import { DashboardlogicsModule } from './dashboardlogics/dashboardlogics.module'
     FeedbackModule,
     tt_attendance_Module,
     ClientUsersModule,
-    DashboardlogicsModule
+    DashboardlogicsModule,
+    VideoSessionModule
   ],
   providers: [
     AppService,
+    EmailService
     // {
     //   provide: APP_GUARD,
     //   useClass: JwtAuthGuard // This enables the Jwt guard globally

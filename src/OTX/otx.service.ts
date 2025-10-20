@@ -8,22 +8,24 @@ export class OtxService {
     private readonly otxApiUrl = 'https://otx.alienvault.com/api/v1/';
     private readonly apiKey = '83043970308c312dac270aba9a8d7b35906e38756128e398c1d6f42f690f14a3'; // Replace with your actual OTX API key
 
-    constructor(private readonly httpService: HttpService) {}
+    constructor(private readonly httpService: HttpService) { }
 
     // Get Pulses from OTX
     async getPulses(): Promise<any> {
         try {
             const response = this.httpService.get(`${this.otxApiUrl}pulses/subscribed`, {
                 headers: {
-                    'Authorization': `Bearer ${this.apiKey}`, // Using your API key directly
+                    'Authorization': `Bearer ${this.apiKey}`,
                 },
             });
-            return await lastValueFrom(response);
+            const result = await lastValueFrom(response);
+            return result.data; // ✅ only the JSON-safe data
         } catch (error) {
             console.error('Error fetching OTX pulses:', error.message);
             throw new HttpException('Failed to fetch OTX pulses', error.response?.status || 500);
         }
     }
+
 
     // Get Indicators of Compromise (IoCs) for a Pulse
     async getPulseIndicators(pulseId: string): Promise<any> {
