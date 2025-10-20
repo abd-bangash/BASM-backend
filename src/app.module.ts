@@ -103,11 +103,11 @@ import { TrainingModule } from './training/training.module';
   ],
   providers: [
     AppService,
-    EmailService
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: JwtAuthGuard // This enables the Jwt guard globally
-    // }
+    EmailService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard // This enables the Jwt guard globally
+    }
   ],
 })
 export class AppModule { }

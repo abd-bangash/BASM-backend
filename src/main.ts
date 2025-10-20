@@ -27,7 +27,7 @@ async function bootstrap() {
 
   // ✅ ADD THIS CODE BELOW:
   const reflector = app.get(Reflector);
-  // app.useGlobalGuards(new JwtAuthGuard(reflector)); // 👈 this line is crucial
+  app.useGlobalGuards(new JwtAuthGuard(reflector)); // 👈 this line is crucial
 
   if (ENVIRONMENT === 'development') {
     console.log(' Swagger enabled on /api endpoint!');

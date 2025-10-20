@@ -16,7 +16,7 @@ export class TabletopController {
         return 'Hello from tabletop';
     }
 
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @Post('campaign/create')
     //  @Roles(Role.Admin)
     async create(@Body() createTableTopDto: CreateTabletopCampaignDto) {
@@ -41,8 +41,7 @@ export class TabletopController {
         return this.tabletopService.getAllCampaignData();
     }
 
-    // @UseGuards(JwtAuthGuard)
-    @Public()
+    @UseGuards(JwtAuthGuard)
     @Get('campaigns/:id')
     async getCampaignById(@Param('id') id: string) {
         return this.tabletopService.getCampaignDataById(id);
