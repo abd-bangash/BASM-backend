@@ -44,6 +44,8 @@ import { VideoSessionModule } from './video-session/video-session.module';
 import { EmailService } from './services/email.service';
 
 
+import { TrainingModule } from './training/training.module';
+
 @Module({
   controllers: [
     AppController,
@@ -96,7 +98,8 @@ import { EmailService } from './services/email.service';
     tt_attendance_Module,
     ClientUsersModule,
     DashboardlogicsModule,
-    VideoSessionModule
+    VideoSessionModule,
+    TrainingModule
   ],
   providers: [
     AppService,
@@ -105,6 +108,6 @@ import { EmailService } from './services/email.service';
     //   provide: APP_GUARD,
     //   useClass: JwtAuthGuard // This enables the Jwt guard globally
     // }
-  ], // Do not add service as provide if it's Module is already imported
+  ],
 })
 export class AppModule { }

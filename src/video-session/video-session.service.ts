@@ -12,22 +12,22 @@ export class VideoSessionsService {
         private readonly emailService: EmailService
     ) { }
 
-    async createSessionForWeakCategory(user, category: string, videoPath: string) {
-        const token = uuidv4();
+    // async createSessionForWeakCategory(user, category: string, videoPath: string) {
+    //     const token = uuidv4();
 
-        const session = await this.sessionModel.create({
-            userId: user._id || user.id,
-            email: user.email,
-            category,
-            videoPath,
-            token
-        });
+    //     const session = await this.sessionModel.create({
+    //         userId: user._id || user.id,
+    //         email: user.email,
+    //         category,
+    //         videoPath,
+    //         token
+    //     });
 
-        const link = `https://your-frontend.com/watch?token=${token}`;
-        await this.emailService.sendVideoLink(user.email, category, link);
+    //     const link = `https://your-frontend.com/watch?token=${token}`;
+    //     await this.emailService.sendVideoLink(user.email, category, link);
 
-        return session;
-    }
+    //     return session;
+    // }
 
     async getSessionByToken(token: string) {
         return this.sessionModel.findOne({ token });

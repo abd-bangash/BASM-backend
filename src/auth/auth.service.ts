@@ -265,6 +265,19 @@ export class AuthService {
     return bcrypt.hash(data, 12);
   }
 
+  async getTrainingToken(userId: string, campaignId: string): Promise<string> {
+    return this.jwtService.signAsync(
+      {
+        userId,
+        campaignId,
+      },
+      {
+        secret: jwtConstant.training_secret,
+        expiresIn: '24h',
+      },
+    );
+  }
+
   async getTokens(userId: string, isAdmin: boolean, email: string, username: string): Promise<Tokens> {
     const [at, rt] = await Promise.all([
       this.jwtService.signAsync(

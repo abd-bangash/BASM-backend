@@ -15,6 +15,8 @@ import {Auth2FASchema} from "../database/schemas/auth.schema";
 import {RtStrategy} from "./strategies/rt.strategy";
 
 
+import { TrainingStrategy } from './strategies/training.strategy';
+
 @Module({
   imports: [
       MongooseModule.forFeature([{name: 'authCollection', schema: Auth2FASchema}]),
@@ -57,7 +59,7 @@ import {RtStrategy} from "./strategies/rt.strategy";
       }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, RtStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, RtStrategy, TrainingStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

@@ -178,7 +178,7 @@ export class TabletopController {
     }
 
     @Delete('delete-question-number/:id')
-    async deleteQuestionNumber(@Param('id') id: string) {
+    async deleteQuestionNumber(@Param('id') id: string): Promise<any> {
         return this.tabletopService.deleteQuestionNumber(id);
     }
 

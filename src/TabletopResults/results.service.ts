@@ -10,8 +10,8 @@ import { dQuestionsService } from "../DefaultQuestions/dQuestions.service";
 import { TabletopAttendance, tt_attendance_Document } from '../database/schemas/tabletop_attendance.schema';
 import { TrainingSession, TrainingSessionDocument } from '../database/schemas/training_session_schema';
 import { CategoryVideo, CategoryVideoDocument } from '../database/schemas/category_video_schema'
-import { v4 as uuidv4 } from 'uuid';
 import { EmailService } from '../services/email.service';
+import { AuthService } from '../auth/auth.service';
 
 
 interface Answer {
@@ -41,7 +41,8 @@ export class ResultsService {
         @InjectModel(CategoryVideo.name) private categoryVideoModel: Model<CategoryVideoDocument>,
         private tabletopService: TabletopService,
         private readonly emailService: EmailService,
-        private readonly questionsService: dQuestionsService
+        private readonly questionsService: dQuestionsService,
+        private readonly authService: AuthService,
     ) { }
 
     private getTotalTabletopCampaignQuestions(questionsList: questions[]): number {
@@ -78,7 +79,6 @@ export class ResultsService {
         });
 
         const savedResult = await newResults.save();
-        // console.log("==================>", results, results[0].campaignId, "====================>")
 
         await this.updateWeakCategories(results[0].userId, results[0].campaignId);
         await this.createTrainingSessionsAfterResults(results[0].campaignId)
@@ -88,7 +88,6 @@ export class ResultsService {
 
     async updateWeakCategories(userId: string, campaignId: string) {
         const participantResults = await this.getResultsByParticipant(campaignId);
-        // console.log("==================>", participantResults)
         const userSpecificResults = participantResults.find(result => result.userId === userId);
 
         if (!userSpecificResults) {
@@ -96,81 +95,42 @@ export class ResultsService {
             return;
         }
 
-        const uniqueWeakCategories = new Set();
+        const uniqueWeakCategories = new Set<string>();
         for (const category of userSpecificResults.categories) {
             const percentage = (category.obtainedMarks / category.totalMarks) * 100;
             if (percentage < 80) {
                 uniqueWeakCategories.add(category.categoryName);
             }
         }
-        // Convert the Set to an Array
         const weakCategoriesToAdd = Array.from(uniqueWeakCategories);
 
-        // console.log(weakCategoriesToAdd);
-
-        // Use $addToSet with the $each modifier to add multiple items uniquely
         await this.attendanceModel.findOneAndUpdate(
             { _id: userId, campaignId: campaignId },
-            { $addToSet: { weakCategories: { $each: weakCategoriesToAdd } } }, // <-- Key change here
-            { new: true, upsert: true } // Added upsert: true just in case the document doesn't exist
+            { $addToSet: { weakCategories: { $each: weakCategoriesToAdd } } },
+            { new: true, upsert: true }
         );
     }
 
-    // ...existing code...
     async createTrainingSessionsAfterResults(campaignId: string) {
-        // normalize campaignId to ObjectId if possible (older or newer data may differ)
         const campaignQueryId = mongoose.Types.ObjectId.isValid(campaignId)
             ? new mongoose.Types.ObjectId(campaignId)
             : campaignId;
 
-        console.log('[createTrainingSessionsAfterResults] campaignId:', campaignId, 'using query id:', campaignQueryId);
         const results = await this.tabletopResultsModel.find({ campaignId: campaignQueryId }).lean().exec();
-        console.log('[createTrainingSessionsAfterResults] results found:', results?.length ?? 0);
-        const categoryVideoMap = {
-            "Phishing": "http://localhost:3000/videos/categories/phishing.mp4",
-            "Email Security": "http://localhost:3000/videos/categories/Fraudlent-Activity.mp4",
-            "Malware and ransomware": "http://localhost:3000/videos/categories/Malware&Ransomware.mp4",
-        };
 
         for (const result of results) {
-            console.log('[createTrainingSessionsAfterResults] processing user:', result.userId);
             const user = await this.attendanceModel.findById(result.userId).lean().exec();
-            console.log('[createTrainingSessionsAfterResults] attendance user found:', !!user);
-            if (!user || !Array.isArray(user.weakCategories) || user.weakCategories.length === 0) continue;
 
-            for (const category of user.weakCategories) {
-                console.log('[createTrainingSessionsAfterResults] weak category:', category);
-                const videoUrl = categoryVideoMap[category];
-                const token = uuidv4();
+            if (!user || !Array.isArray(user.weakCategories) || user.weakCategories.length === 0) {
+                continue;
+            }
 
-                const sessionPayload: Partial<TrainingSession> = {
-                    // map to schema fields
-                    userEmail: user.email,
-                    campaignId: campaignQueryId as any,
-                    categoryName: category,
-                    token,
-                    status: 'pending',
-                    // include videoPath only if schema supports it (see patch 2)
-                    videoPath: videoUrl,
-                };
-
-                try {
-                    await this.trainingSessionModel.create(sessionPayload);
-                    console.log('[createTrainingSessionsAfterResults] training session created for', user.email, category);
-                } catch (err) {
-                    console.error('[createTrainingSessionsAfterResults] failed to create training session for', user.email, err);
-                    continue; // skip email if session creation fails
-                }
-
-                // build dashboard link and send email; log any email errors
-                const dashboardLink = `https://frontend.yourapp.com/dashboard?user=${user._id}&token=${token}`;
-                console.log('[createTrainingSessionsAfterResults] sending email to:', user.email, 'category:', category, 'link:', dashboardLink);
-                try {
-                    await this.emailService.sendVideoLink(user.email, category, dashboardLink);
-                    console.log('[createTrainingSessionsAfterResults] email queued for', user.email);
-                } catch (emailErr) {
-                    console.error('[createTrainingSessionsAfterResults] failed to send email to', user.email, emailErr);
-                }
+            try {
+                const token = await this.authService.getTrainingToken(user._id.toString(), campaignId);
+                await this.emailService.sendTrainingDashboardLink(user.email, token);
+                console.log(`[createTrainingSessionsAfterResults] email queued for ${user.email}`);
+            } catch (err) {
+                console.error(`[createTrainingSessionsAfterResults] failed to create training session or send email for ${user.email}`, err);
             }
         }
     }

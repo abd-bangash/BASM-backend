@@ -10,6 +10,8 @@ import { DefaultQuestionsModule } from "../DefaultQuestions/dQuestions.module";
 import { TabletopAttendance, tt_attendance_Schema } from '../database/schemas/tabletop_attendance.schema';
 import { EmailService } from '../services/email.service';
 
+import { AuthModule } from '../auth/auth.module';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -20,7 +22,8 @@ import { EmailService } from '../services/email.service';
 
     ]),
     TabletopModule,
-    DefaultQuestionsModule
+    DefaultQuestionsModule,
+    AuthModule
   ],
   controllers: [ResultsController],
   providers: [ResultsService, EmailService],
