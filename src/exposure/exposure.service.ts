@@ -1,7 +1,7 @@
-import {Injectable, HttpException, HttpStatus} from "@nestjs/common";
+import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
 import axios from "axios";
-import {ConfigService} from "@nestjs/config";
-import {Exposure} from "../models/domain-exposures.model";
+import { ConfigService } from "@nestjs/config";
+import { Exposure } from "../models/domain-exposures.model";
 
 
 @Injectable()
@@ -18,9 +18,9 @@ export class ExposureService {
     constructor(private readonly configService: ConfigService) {
         this.apiKey = this.configService.get<string>('ENZOIC_API_KEY');
         this.apiSecret = this.configService.get<string>('ENZOIC_API_SECRET');
-      if (!this.apiKey || !this.apiSecret) {
-  throw new HttpException("Dark Web Exposures API key or secret is undefined.", 500);
-}
+        if (!this.apiKey || !this.apiSecret) {
+            throw new HttpException("Dark Web Exposures API key or secret is undefined.", 500);
+        }
 
     }
 
@@ -34,6 +34,7 @@ export class ExposureService {
 
     // Method to search exposures by email
     async getExposuresByEmail(usernames: string, includeExposureDetails?: number): Promise<any> {
+        console.log(this.getAuthHeaders())
         try {
             const response = await axios.get(
                 `${this.emailExposureUrl}`,
@@ -74,10 +75,11 @@ export class ExposureService {
     async getExposuresByDomain(
         domain: string,
         includeExposureDetails?: number,
-        pageSize?:number,
+        pageSize?: number,
         pagingToken?: string
     ): Promise<Exposure> {
         try {
+            console.log(this.getAuthHeaders())
             const response = await axios.get(
                 `${this.domainExposureUrl}`, // Adjust the URL based on Enzoic's API documentation
                 {
@@ -87,7 +89,7 @@ export class ExposureService {
                         includeExposureDetails, // Optional, include details if specified and non-zero
                         pageSize, // Optional page size
                         pagingToken, // Optional paging token for pagination },
-                         },
+                    },
                 }
             );
             return response.data; // Return the API response
@@ -129,13 +131,13 @@ export class ExposureService {
         let exposureDates: string[] = [];
         // This will have the number of exposure per category
         let exposureCount: {
-            [category: string]: {count: number}
+            [category: string]: { count: number }
         } = {};
         let passwordTypeCount: {
-            [ passwordType: string]: { count: number}
+            [passwordType: string]: { count: number }
         } = {};
         let exposureByYear: {
-            [ exposureByYear: string ] : { count: number }
+            [exposureByYear: string]: { count: number }
         } = {};
 
         for (let exposure of domainExposures.exposures) {
@@ -143,15 +145,15 @@ export class ExposureService {
             const passwordType = exposure.passwordType;
             const exposureYear = new Date(exposure.dateAdded).getFullYear().toString();
 
-            if ( !exposureCategory.includes(category) ) {
+            if (!exposureCategory.includes(category)) {
                 exposureCategory.push(category);
                 exposureCount[category] = { count: 0 };
             }
-            if ( !passwordTypes.includes(passwordType) ) {
+            if (!passwordTypes.includes(passwordType)) {
                 passwordTypes.push(passwordType);
                 passwordTypeCount[passwordType] = { count: 0 };
             }
-            if ( !exposureDates.includes(exposureYear) ) {
+            if (!exposureDates.includes(exposureYear)) {
                 exposureDates.push(exposureYear);
                 exposureByYear[exposureYear] = { count: 0 };
             }
