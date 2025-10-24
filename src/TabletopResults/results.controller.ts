@@ -12,7 +12,7 @@ export class ResultsController {
   @Public()
   @Post('/tabletop')
   async submitResults2(@Body('results') results: TabletopResultsDto[]): Promise<any> {
-    console.log(results);
+    console.log('===============>', 'in results controller');
     return this.resultsService.saveResultsHussain(results);
   }
 

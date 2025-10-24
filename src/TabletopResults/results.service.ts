@@ -65,6 +65,8 @@ export class ResultsService {
     }
 
     async saveResultsHussain(results: Answer[]): Promise<ReturnData> {
+        console.log("=================> inside save rsultsHussain")
+        console.log(results)
         this.currentCampaignData = await this.tabletopService.getCampaignDataById(results[0].campaignId);
         const userScore = this.calculateUserScore(results);
         const totalScore = this.getTotalTabletopCampaignQuestions(this.currentCampaignData.questions) * 10;
@@ -104,22 +106,26 @@ export class ResultsService {
         }
         const weakCategoriesToAdd = Array.from(uniqueWeakCategories);
 
+
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+
         await this.attendanceModel.findOneAndUpdate(
-            { _id: userId, campaignId: campaignId },
+            { _id: userObjectId, campaignId: campaignId },
             { $addToSet: { weakCategories: { $each: weakCategoriesToAdd } } },
-            { new: true, upsert: true }
+            { new: true }
         );
     }
 
     async createTrainingSessionsAfterResults(campaignId: string) {
+        console.log("==============> in email func")
         const campaignQueryId = mongoose.Types.ObjectId.isValid(campaignId)
             ? new mongoose.Types.ObjectId(campaignId)
             : campaignId;
 
         const results = await this.tabletopResultsModel.find({ campaignId: campaignQueryId }).lean().exec();
-
+        console.log(results);
         for (const result of results) {
-            const user = await this.attendanceModel.findById(result.userId).lean().exec();
+            const user = await this.attendanceModel.findById(new mongoose.Types.ObjectId(result.userId)).lean().exec();
 
             if (!user || !Array.isArray(user.weakCategories) || user.weakCategories.length === 0) {
                 continue;

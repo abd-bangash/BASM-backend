@@ -23,21 +23,27 @@ export class TrainingService {
 
   async getTrainingSession(userId: string, campaignId: string): Promise<any> {
     const attendance = await this.attendanceModel.findOne({ _id: userId, campaignId: campaignId }).lean().exec();
-
+    console.log(attendance)
     if (!attendance || !attendance.weakCategories || attendance.weakCategories.length === 0) {
       throw new NotFoundException('No weak categories found for this user in this campaign.');
     }
 
     const trainingData = [];
 
-    for (const categoryName of attendance.weakCategories) {
-      const video = await this.categoryVideoModel.findOne({ categoryName }).lean().exec();
+    for (let categoryName of attendance.weakCategories) {
+      categoryName = categoryName.toLowerCase()
+      const videos = await this.categoryVideoModel.find({ categoryName }).lean().exec();
+      console.log(videos)
 
-      if (video) {
+      if (videos && videos.length > 0) {
         trainingData.push({
-          categoryName: video.categoryName,
-          videoUrl: `http://localhost:3000/videos/${video.filePath}`,
-          interactiveQuestions: video.interactiveQuestions,
+          categoryName: categoryName,
+          videos: videos.map(video => ({
+            title: video.title,
+            description: video.description,
+            videoUrl: `http://localhost:3000/videos/${video.filePath}`,
+            interactiveQuestions: video.interactiveQuestions,
+          })),
         });
       }
     }

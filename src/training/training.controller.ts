@@ -5,11 +5,12 @@ import { Request } from 'express';
 
 @Controller('training')
 export class TrainingController {
-  constructor(private readonly trainingService: TrainingService) {}
+  constructor(private readonly trainingService: TrainingService) { }
 
   @Get()
   @UseGuards(TrainingTokenGuard)
   getTrainingSession(@Req() req: Request) {
+    console.log('==============> inside training controller')
     const user = req.user as { userId: string; campaignId: string };
     return this.trainingService.getTrainingSession(user.userId, user.campaignId);
   }

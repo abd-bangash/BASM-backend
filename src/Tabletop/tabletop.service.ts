@@ -1,26 +1,25 @@
-import {HttpException, Inject, Injectable, NotFoundException} from "@nestjs/common";
+import { HttpException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import mongoose, {Model, ObjectId} from "mongoose";
-import {CreateTabletopCampaignDto, QuestionNumberDto} from "../database/dto/create-tabletop-campaign.dto";
+import mongoose, { Model, ObjectId } from "mongoose";
+import { CreateTabletopCampaignDto, QuestionNumberDto } from "../database/dto/create-tabletop-campaign.dto";
 import { questions } from "./question.interface";
-import {Tabletop, TabletopQuestionNumberDocument} from "../database/schemas/tabletop.schema";
+import { Tabletop, TabletopQuestionNumberDocument } from "../database/schemas/tabletop.schema";
 
 @Injectable()
-export class TabletopService{
+export class TabletopService {
     constructor(
         @InjectModel('tabletopCollections') private readonly tabletopModel: Model<Tabletop>,
         @InjectModel('TabletopQuestionNumberCollection') private readonly tabletopQuestionNumberModel: Model<TabletopQuestionNumberDocument>
-    )
-{}
+    ) { }
 
-    async addTableTopCampaign(createTableTopDto: CreateTabletopCampaignDto): Promise<object>{
+    async addTableTopCampaign(createTableTopDto: CreateTabletopCampaignDto): Promise<object> {
         const newCampaign = new this.tabletopModel(createTableTopDto);
-        try{
+        try {
             await newCampaign.save();
-            return {message: 'ok'}
+            return { message: 'ok' }
         } catch (err) {
             console.log(err);
-            return Promise.reject({message: 'Message Error. Please view logs.'});
+            return Promise.reject({ message: 'Message Error. Please view logs.' });
         }
     }
 
@@ -48,7 +47,7 @@ export class TabletopService{
 
     async getCampaignDataByClientName(name: string): Promise<Tabletop[]> {
         try {
-            return this.tabletopModel.find({ clientName: name  });
+            return this.tabletopModel.find({ clientName: name });
         }
         catch (e) {
             console.log("An error has occurred: ");
@@ -81,12 +80,12 @@ export class TabletopService{
         }
     }
 
-    async getCampaignDataByUsername(username: string): Promise<Tabletop[]>{
-        return this.tabletopModel.find({clientUsername: username}).exec();
+    async getCampaignDataByUsername(username: string): Promise<Tabletop[]> {
+        return this.tabletopModel.find({ clientUsername: username }).exec();
     }
 
-    async getQuestionDataByCampaignName(name: string): Promise<questions[]>{
-        const campaign = await this.tabletopModel.findOne({campaignName: name}).exec();
+    async getQuestionDataByCampaignName(name: string): Promise<questions[]> {
+        const campaign = await this.tabletopModel.findOne({ campaignName: name }).exec();
         return campaign.questions;
     }
 
@@ -96,10 +95,10 @@ export class TabletopService{
             _id = new mongoose.Types.ObjectId(id);
         }
         catch (e) {
-            console.log ("Invalid ID provided");
+            console.log("Invalid ID provided");
             console.error(e);
         }
-        const campaignData = await this.tabletopModel.findOne({_id: _id}).exec();
+        const campaignData = await this.tabletopModel.findOne({ _id: _id }).exec();
         let campaignQuestions = [];
         campaignData.questions.forEach((question) => {
             question.questions.forEach((singleQuestion) => {
@@ -146,12 +145,12 @@ export class TabletopService{
         try {
             mongooseId = new mongoose.Types.ObjectId(id);
             const updatedCampaign = await this.tabletopModel.findByIdAndUpdate(
-                {_id: mongooseId},
+                { _id: mongooseId },
                 { isCompleted },
                 { new: true },
             )
             console.log("Campaign completion status successfull.");
-            console.log(updatedCampaign);
+            // console.log(updatedCampaign);
             return updatedCampaign;
         }
         catch (e) {
@@ -164,7 +163,7 @@ export class TabletopService{
         let mongooseId: mongoose.Types.ObjectId;
         try {
             mongooseId = new mongoose.Types.ObjectId(id);
-            const updatedCampaign = await this.tabletopModel.findOne({_id: mongooseId});
+            const updatedCampaign = await this.tabletopModel.findOne({ _id: mongooseId });
             return updatedCampaign.isCompleted;
         }
         catch (e) {
@@ -178,7 +177,7 @@ export class TabletopService{
 
         try {
             _campaignId = new mongoose.Types.ObjectId(campaignId);
-            console.log(_campaignId)
+            // console.log(_campaignId)
         }
         catch (e) {
             console.log("Unable to convert string to object id. Invalid Campaign ID: ", campaignId);
@@ -186,7 +185,7 @@ export class TabletopService{
             return 402;
         }
 
-        const tabletopCampaign = await this.tabletopModel.findOne({_id: _campaignId._id}).exec();
+        const tabletopCampaign = await this.tabletopModel.findOne({ _id: _campaignId._id }).exec();
         if (tabletopCampaign === null) {
             return 404;
         }
@@ -199,7 +198,7 @@ export class TabletopService{
             const _campaignId = new mongoose.Types.ObjectId(questionNumberDto.campaignId);
         }
         catch (e) {
-            console.log ("Unable to convert ", questionNumberDto.campaignId, " to mongoose object ID");
+            console.log("Unable to convert ", questionNumberDto.campaignId, " to mongoose object ID");
             console.error(e);
         }
 
@@ -207,36 +206,36 @@ export class TabletopService{
 
         try {
             await questionNumberDocument.save();
-            return {message: 'ok'};
+            return { message: 'ok' };
         }
         catch (e) {
             console.log("Unable to store question number data into mongoose collection.")
             console.error(e);
         }
-        return {message: 'error'};
+        return { message: 'error' };
     }
 
     async fetchQuestionNumber(campaignId: string) {
         console.log("Got campaign ID: ", campaignId);
-        return this.tabletopQuestionNumberModel.findOne({campaignId: campaignId}).exec();
+        return this.tabletopQuestionNumberModel.findOne({ campaignId: campaignId }).exec();
     }
 
     async updateQuestionNumber(campaignId: string) {
-        const questionNumberDoc = await this.tabletopQuestionNumberModel.findOne({campaignId: campaignId}).exec();
+        const questionNumberDoc = await this.tabletopQuestionNumberModel.findOne({ campaignId: campaignId }).exec();
         const updatedQuestionNumber = questionNumberDoc.questionNumber + 1;
         try {
             console.log("trying to update question number to ", updatedQuestionNumber);
-            await questionNumberDoc.updateOne({questionNumber: updatedQuestionNumber });
+            await questionNumberDoc.updateOne({ questionNumber: updatedQuestionNumber });
             await questionNumberDoc.save();
-            return {message: 'ok'};
+            return { message: 'ok' };
         }
         catch (e) {
             console.error(e);
         }
-        return {message: 'error'};
+        return { message: 'error' };
     }
 
-    async deleteQuestionNumber(campaignId: string ) {
-        return await this.tabletopQuestionNumberModel.deleteOne({campaignId: campaignId}).exec();
+    async deleteQuestionNumber(campaignId: string) {
+        return await this.tabletopQuestionNumberModel.deleteOne({ campaignId: campaignId }).exec();
     }
- }
+}

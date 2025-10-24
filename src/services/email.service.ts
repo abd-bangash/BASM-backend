@@ -4,29 +4,29 @@ import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
-    private transporter;
+  private transporter;
 
-    constructor(private configService: ConfigService) {
-        this.transporter = nodemailer.createTransport({
-            host: this.configService.get<string>('EMAIL_HOST'),
-            port: this.configService.get<number>('EMAIL_PORT'),
-            secure: this.configService.get<string>('EMAIL_SECURE') === 'true',
-            auth: {
-                user: this.configService.get<string>('EMAIL_USER'),
-                pass: this.configService.get<string>('EMAIL_PASS'),
-            },
-        });
-    }
+  constructor(private configService: ConfigService) {
+    this.transporter = nodemailer.createTransport({
+      host: this.configService.get<string>('EMAIL_HOST'),
+      port: this.configService.get<number>('EMAIL_PORT'),
+      secure: this.configService.get<string>('EMAIL_SECURE') === 'true',
+      auth: {
+        user: this.configService.get<string>('EMAIL_USER'),
+        pass: this.configService.get<string>('EMAIL_PASS'),
+      },
+    });
+  }
 
-    async sendTrainingDashboardLink(to: string, token: string, name: string) {
-        const frontendUrl = 'http://localhost:4200'; // Replace with your actual frontend URL
-        const link = `${frontendUrl}/training?token=${token}`;
+  async sendTrainingDashboardLink(to: string, token: string, name: string) {
+    const frontendUrl = 'http://localhost:4200'; // Replace with your actual frontend URL
+    const link = `${frontendUrl}/training?token=${token}`;
 
-        const mailOptions = {
-            from: `"BASM AI Tabletop Training" <${this.configService.get<string>('EMAIL_USER')}>`,
-            to,
-            subject: 'Your BASM AI Tabletop Training Session is Ready',
-            html: `
+    const mailOptions = {
+      from: `"BASM AI Tabletop Training" <${this.configService.get<string>('EMAIL_USER')}>`,
+      to,
+      subject: 'Your BASM AI Tabletop Training Session is Ready',
+      html: `
         <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -66,7 +66,7 @@ body {
   display: block;
   font-size: 36px;
   font-weight: bold;
-  color: #FF8C00;
+  color: #EB5E28;
   letter-spacing: 3px;
 }
 
@@ -99,7 +99,7 @@ body {
 .cta-button {
   display: inline-block;
   padding: 15px 30px;
-  background-color: #FF8C00;
+  background-color: #EB5E28;
   color: #111111;
   text-decoration: none;
   font-weight: bold;
@@ -114,7 +114,7 @@ body {
 }
   a.cta-button, a.cta-button:visited, a.cta-button:hover, a.cta-button:active {
   color: #111111 !important;
-  background-color: #FF8C00 !important;
+  background-color: #EB5E28 !important;
   text-decoration: none !important;
   border-radius: 8px;
   font-weight: bold;
@@ -173,7 +173,7 @@ a.cta-button:hover {
 
               <!-- Call to Action -->
              <div style="text-align: center; margin: 40px 0;">
-                <a href="${link}" class="cta-button" style="color:#111111 !important; background-color:#FF8C00 !important; text-decoration:none !important; border-radius:8px; font-weight:bold; display:inline-block; padding:15px 30px; font-size:16px; box-shadow:0 4px 10px rgba(255,140,0,0.4);">
+                <a href="${link}" class="cta-button" style="color:#111111 !important; background-color:#EB5E28 !important; text-decoration:none !important; border-radius:8px; font-weight:bold; display:inline-block; padding:15px 30px; font-size:16px; box-shadow:0 4px 10px rgba(255,140,0,0.4);">
                     START YOUR TRAINING NOW
                 </a>
             </div>
@@ -200,19 +200,19 @@ a.cta-button:hover {
 </body>
 </html>
         `,
-        };
+    };
 
-        await this.transporter.sendMail(mailOptions);
-    }
+    await this.transporter.sendMail(mailOptions);
+  }
 
-    async sendTrainingCompletionEmail(to: string, name: string) {
-        const frontendUrl = 'http://localhost:4200'; // Base URL for the dashboard
+  async sendTrainingCompletionEmail(to: string, name: string) {
+    const frontendUrl = 'http://localhost:4200'; // Base URL for the dashboard
 
-        const mailOptions = {
-            from: `"BASM AI Tabletop Training" <${this.configService.get<string>('EMAIL_USER')}>`,
-            to,
-            subject: 'Congratulations! You Have Completed Your Training',
-            html: `
+    const mailOptions = {
+      from: `"BASM AI Tabletop Training" <${this.configService.get<string>('EMAIL_USER')}>`,
+      to,
+      subject: 'Congratulations! You Have Completed Your Training',
+      html: `
         <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -252,7 +252,7 @@ body {
   display: block;
   font-size: 36px;
   font-weight: bold;
-  color: #FF8C00;
+  color: #EB5E28;
   letter-spacing: 3px;
 }
 
@@ -285,7 +285,7 @@ body {
 .cta-button {
   display: inline-block;
   padding: 15px 30px;
-  background-color: #FF8C00;
+  background-color: #EB5E28;
   color: #111111;
   text-decoration: none;
   font-weight: bold;
@@ -301,7 +301,7 @@ body {
 
 a.cta-button, a.cta-button:visited, a.cta-button:hover, a.cta-button:active {
   color: #111111 !important;
-  background-color: #FF8C00 !important;
+  background-color: #EB5E28 !important;
   text-decoration: none !important;
   border-radius: 8px;
   font-weight: bold;
@@ -373,9 +373,9 @@ a.cta-button:hover {
 </body>
 </html>
         `,
-        };
+    };
 
-        await this.transporter.sendMail(mailOptions);
-    }
+    await this.transporter.sendMail(mailOptions);
+  }
 }
 

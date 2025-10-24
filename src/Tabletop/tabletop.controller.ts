@@ -51,7 +51,7 @@ export class TabletopController {
     @Get('campaigns/client/:id')
     async getCampaignsByClientId(@Param('id') client_id: string, @Res() res: Response) {
         const campaign_data = await this.tabletopService.getCampaignDataByClientId(client_id);
-        console.log(campaign_data);
+        // console.log(campaign_data);
         if (campaign_data === null || campaign_data.length === 0) {
             res.status(HttpStatus.NOT_FOUND).send();
         }
@@ -84,7 +84,7 @@ export class TabletopController {
     @Get('campaigns/name/:name')
     async getCampaignsByClientName(@Param('name') name: string, @Res() res: Response) {
         const campaign_data = await this.tabletopService.getCampaignDataByClientName(name);
-        console.log(campaign_data);
+        // console.log(campaign_data);
         if (campaign_data === null || campaign_data.length === 0) {
             res.status(HttpStatus.NOT_FOUND).send();
         }
@@ -172,7 +172,7 @@ export class TabletopController {
     @Get('get-question-number/:id')
     async getQuestionNumber(@Param('id') id: string) {
         const result = await this.tabletopService.fetchQuestionNumber(id);
-        console.log(result)
+        // console.log(result)
         return result.questionNumber;
     }
 
